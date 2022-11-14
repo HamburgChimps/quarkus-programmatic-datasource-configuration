@@ -12,7 +12,7 @@ reason I started researching how to do this was because I wanted to create an ap
 file itself could be located in multiple places.
 
 I have tried to annotate the respective configuration and code with comments for specific details of why that code or configuration is
-necessary. If you still have questions after reading through them though, feel free to open up an issue and I will attempt
+necessary. If you still have questions after reading through them, feel free to open up an issue and I will attempt
 to help clarify any confusing parts.
 
 [0]: https://quarkus.io/guides/hibernate-orm#programmatically-resolving-tenants-connections
