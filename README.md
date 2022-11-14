@@ -1,6 +1,6 @@
 # Quarkus Programmatic Datasource Configuration
 
-I couldn't find any direct examples to how to programmatically configure a datasource with Quarkus in the docs, only
+I couldn't find any direct examples on how to programmatically configure a datasource with Quarkus in the docs, only
 a reference to [TenantConnectionResolver][0] and a [GitHub issue asking about it][1]. Armed with these helpful, albeit
 vague tips, I figured out how to do it and made this example app to demonstrate it.
 
