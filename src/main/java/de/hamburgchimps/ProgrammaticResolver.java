@@ -15,8 +15,6 @@ import java.util.UUID;
 // detects that a class that implements TenantConnectionResolver
 // Also as far as I can tell, quarkus only bothers calling resolveTenantId() if
 // there is an active request context. Otherwise, only getDefaultTenantId() is invoked.
-// Depending on how you want to implement your programmatic datasource configuration,
-// you could use information from the
 @PersistenceUnitExtension
 @ApplicationScoped
 public class ProgrammaticResolver implements TenantResolver {

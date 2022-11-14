@@ -45,6 +45,10 @@ public class ProgrammaticDatasourceConfigurer implements TenantConnectionResolve
         props.put(AgroalPropertiesReader.JDBC_URL, jdbcUrl);
 
         // Run flyway migrations on dynamically created db
+        // Even if you have enabled hibernate schema generation,
+        // it won't work with programmatically generated datasources.
+        // Quarkus only runs the Hibernate schema generation, if enabled,
+        // on the default datasource.
         var flyway = Flyway
                 .configure()
                 .dataSource(jdbcUrl, "", "")
