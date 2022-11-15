@@ -2,14 +2,9 @@ package de.hamburgchimps;
 
 import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
-import io.quarkus.logging.Log;
-import io.vertx.ext.web.RoutingContext;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
 import java.util.Random;
-import java.util.UUID;
 
 // As far as I can tell, this plumbing becomes necessary if quarkus
 // detects that a class that implements TenantConnectionResolver

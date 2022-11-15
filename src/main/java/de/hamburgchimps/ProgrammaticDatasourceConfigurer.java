@@ -5,14 +5,10 @@ import io.agroal.api.configuration.supplier.AgroalPropertiesReader;
 import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
-import io.quarkus.logging.Log;
 import org.flywaydb.core.Flyway;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
-import java.io.File;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
