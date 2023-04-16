@@ -1,6 +1,6 @@
 # Quarkus Programmatic Datasource Configuration
 
-:rotating_light: **We recommend not using this repository as an example as there appears to be buggy behavior with programmatially created datasources in regards to transactions. See [this issue](https://github.com/HamburgChimps/quarkus-programmatic-datasource-configuration/issues/1) for more information.
+:rotating_light: **We recommend not using this repository as an example as there appears to be buggy behavior with programmatially created datasources in regards to transactions. See [this issue](https://github.com/HamburgChimps/quarkus-programmatic-datasource-configuration/issues/1) for more information.**
 
 I couldn't find any direct examples on how to programmatically configure a datasource with Quarkus in the docs, only
 a reference to [TenantConnectionResolver][0] and a [GitHub issue asking about it][1]. Armed with these helpful, albeit
