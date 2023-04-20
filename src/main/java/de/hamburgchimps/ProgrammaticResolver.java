@@ -7,7 +7,7 @@ import javax.enterprise.context.ApplicationScoped;
 import java.util.Random;
 
 // As far as I can tell, this plumbing becomes necessary if quarkus
-// detects that a class that implements TenantConnectionResolver
+// detects a class that implements TenantConnectionResolver
 // Also as far as I can tell, quarkus only bothers calling resolveTenantId() if
 // there is an active request context. Otherwise, only getDefaultTenantId() is invoked.
 @PersistenceUnitExtension

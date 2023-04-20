@@ -1,9 +1,7 @@
 package de.hamburgchimps;
 
 import io.agroal.api.AgroalDataSource;
-import io.agroal.api.configuration.supplier.AgroalConnectionFactoryConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
-import io.agroal.api.configuration.supplier.AgroalPropertiesReader;
 import io.agroal.narayana.NarayanaTransactionIntegration;
 import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
@@ -16,8 +14,6 @@ import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 // Implement the quarkus TenantConnectionResolver interface to determine the jdbc
@@ -42,46 +38,53 @@ public class ProgrammaticDatasourceConfigurer implements TenantConnectionResolve
 
     @Override
     public ConnectionProvider resolve(String tenantId) {
-        Map<String, String> props = new HashMap<>();
-
-        var dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
-        var poolConfiguration = dataSourceConfiguration.connectionPoolConfiguration();
-        var connectionFactoryConfiguration = poolConfiguration.connectionFactoryConfiguration();
-
-        var txIntegration = new NarayanaTransactionIntegration(txManager, txSyncRegistry, null, false, null);
-
         var jdbcUrl = String.format("jdbc:h2:./%s-datasource-%s", tenantId, UUID.randomUUID());
 
-        poolConfiguration
-                .maxSize(1)
-                .minSize(1)
-                .initialSize(1)
-                .maxLifetime(Duration.ofSeconds(10))
-                .acquisitionTimeout(Duration.ofSeconds(3))
-                .transactionIntegration(txIntegration);
-
-        connectionFactoryConfiguration
-                .autoCommit(false)
-                .jdbcUrl(jdbcUrl);
-
         try {
-            var dataSource = AgroalDataSource.from(dataSourceConfiguration);
-
             // Run flyway migrations on dynamically created db
             // Even if you have enabled hibernate schema generation,
             // it won't work with programmatically generated datasources.
             // Quarkus only runs the Hibernate schema generation, if enabled,
             // on the default datasource.
+
+            // We need a separate flywayDatasourceConfiguration and actual dataSourceConfiguration
+            // even though they talk to the same database, because flyway does not play nice with
+            // datasource connections that are configured for use with transactions.
+            var flywayDataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
+            flywayDataSourceConfiguration
+                    .connectionPoolConfiguration()
+                    // I don't know why, but the connection pool for flyway has to at least be able to hold
+                    // two connections otherwise the thread gets blocked indefinitely.
+                    .maxSize(2)
+                    .connectionFactoryConfiguration()
+                    .jdbcUrl(jdbcUrl);
             var flyway = Flyway
                     .configure()
-                    .dataSource(jdbcUrl, "", "")
+                    .dataSource(AgroalDataSource.from(flywayDataSourceConfiguration))
                     .cleanDisabled(false)
                     .load();
 
             flyway.clean();
             flyway.migrate();
 
-            return new QuarkusConnectionProvider(dataSource);
+            var dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
+            var poolConfiguration = dataSourceConfiguration.connectionPoolConfiguration();
+            var connectionFactoryConfiguration = poolConfiguration.connectionFactoryConfiguration();
+
+            var txIntegration = new NarayanaTransactionIntegration(txManager, txSyncRegistry, null, false, null);
+
+            poolConfiguration
+                    .maxSize(1)
+                    .minSize(1)
+                    .initialSize(1)
+                    .maxLifetime(Duration.ofSeconds(10))
+                    .acquisitionTimeout(Duration.ofSeconds(3))
+                    .transactionIntegration(txIntegration);
+
+            connectionFactoryConfiguration
+                    .jdbcUrl(jdbcUrl);
+
+            return new QuarkusConnectionProvider(AgroalDataSource.from(dataSourceConfiguration.get()));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
