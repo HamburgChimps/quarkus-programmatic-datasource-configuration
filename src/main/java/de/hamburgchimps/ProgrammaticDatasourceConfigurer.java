@@ -1,7 +1,10 @@
 package de.hamburgchimps;
 
 import io.agroal.api.AgroalDataSource;
+import io.agroal.api.configuration.supplier.AgroalConnectionFactoryConfigurationSupplier;
+import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalPropertiesReader;
+import io.agroal.narayana.NarayanaTransactionIntegration;
 import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
@@ -9,7 +12,10 @@ import org.flywaydb.core.Flyway;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.TransactionManager;
+import javax.transaction.TransactionSynchronizationRegistry;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -26,36 +32,55 @@ import java.util.UUID;
 @ApplicationScoped
 public class ProgrammaticDatasourceConfigurer implements TenantConnectionResolver {
 
+    final TransactionManager txManager;
+    final TransactionSynchronizationRegistry txSyncRegistry;
+
+    public ProgrammaticDatasourceConfigurer(TransactionManager txManager, TransactionSynchronizationRegistry txSyncRegistry) {
+        this.txManager = txManager;
+        this.txSyncRegistry = txSyncRegistry;
+    }
+
     @Override
     public ConnectionProvider resolve(String tenantId) {
         Map<String, String> props = new HashMap<>();
 
+        var dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
+        var poolConfiguration = dataSourceConfiguration.connectionPoolConfiguration();
+        var connectionFactoryConfiguration = poolConfiguration.connectionFactoryConfiguration();
+
+        var txIntegration = new NarayanaTransactionIntegration(txManager, txSyncRegistry, null, false, null);
 
         var jdbcUrl = String.format("jdbc:h2:./%s-datasource-%s", tenantId, UUID.randomUUID());
 
-        props.put(AgroalPropertiesReader.MAX_SIZE, "1");
-        props.put(AgroalPropertiesReader.MIN_SIZE, "1");
-        props.put(AgroalPropertiesReader.INITIAL_SIZE, "1");
-        props.put(AgroalPropertiesReader.MAX_LIFETIME_S, "10");
-        props.put(AgroalPropertiesReader.ACQUISITION_TIMEOUT_S, "3");
-        props.put(AgroalPropertiesReader.JDBC_URL, jdbcUrl);
+        poolConfiguration
+                .maxSize(1)
+                .minSize(1)
+                .initialSize(1)
+                .maxLifetime(Duration.ofSeconds(1))
+                .acquisitionTimeout(Duration.ofSeconds(5))
+                .transactionIntegration(txIntegration);
 
-        // Run flyway migrations on dynamically created db
-        // Even if you have enabled hibernate schema generation,
-        // it won't work with programmatically generated datasources.
-        // Quarkus only runs the Hibernate schema generation, if enabled,
-        // on the default datasource.
-        var flyway = Flyway
-                .configure()
-                .dataSource(jdbcUrl, "", "")
-                .cleanDisabled(false)
-                .load();
+        connectionFactoryConfiguration
+                .autoCommit(false)
+                .jdbcUrl(jdbcUrl);
 
-        flyway.clean();
-        flyway.migrate();
+        try (var dataSource = AgroalDataSource.from(dataSourceConfiguration.get())) {
 
-        try {
-            return new QuarkusConnectionProvider(AgroalDataSource.from(new AgroalPropertiesReader().readProperties(props).get()));
+            // Run flyway migrations on dynamically created db
+            // Even if you have enabled hibernate schema generation,
+            // it won't work with programmatically generated datasources.
+            // Quarkus only runs the Hibernate schema generation, if enabled,
+            // on the default datasource.
+            var flyway = Flyway
+                    .configure()
+                    .dataSource(dataSource)
+                    .cleanDisabled(false)
+                    .load();
+
+            flyway.clean();
+            flyway.migrate();
+
+            return new QuarkusConnectionProvider(dataSource);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
