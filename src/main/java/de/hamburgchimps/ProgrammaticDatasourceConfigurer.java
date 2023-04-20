@@ -56,15 +56,16 @@ public class ProgrammaticDatasourceConfigurer implements TenantConnectionResolve
                 .maxSize(1)
                 .minSize(1)
                 .initialSize(1)
-                .maxLifetime(Duration.ofSeconds(1))
-                .acquisitionTimeout(Duration.ofSeconds(5))
+                .maxLifetime(Duration.ofSeconds(10))
+                .acquisitionTimeout(Duration.ofSeconds(3))
                 .transactionIntegration(txIntegration);
 
         connectionFactoryConfiguration
                 .autoCommit(false)
                 .jdbcUrl(jdbcUrl);
 
-        try (var dataSource = AgroalDataSource.from(dataSourceConfiguration.get())) {
+        try {
+            var dataSource = AgroalDataSource.from(dataSourceConfiguration);
 
             // Run flyway migrations on dynamically created db
             // Even if you have enabled hibernate schema generation,
@@ -73,7 +74,7 @@ public class ProgrammaticDatasourceConfigurer implements TenantConnectionResolve
             // on the default datasource.
             var flyway = Flyway
                     .configure()
-                    .dataSource(dataSource)
+                    .dataSource(jdbcUrl, "", "")
                     .cleanDisabled(false)
                     .load();
 
