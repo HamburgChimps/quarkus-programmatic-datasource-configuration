@@ -3,7 +3,7 @@ package de.hamburgchimps;
 import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Random;
 
 // As far as I can tell, this plumbing becomes necessary if quarkus

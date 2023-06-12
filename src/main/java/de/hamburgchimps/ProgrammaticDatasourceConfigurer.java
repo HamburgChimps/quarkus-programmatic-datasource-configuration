@@ -9,9 +9,9 @@ import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
 import org.flywaydb.core.Flyway;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.TransactionManager;
-import javax.transaction.TransactionSynchronizationRegistry;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.UUID;
